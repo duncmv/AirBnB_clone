@@ -12,9 +12,14 @@ class TestBaseModel(unittest.TestCase):
     def test_instantiation(self):
         """Test that object is correctly created"""
         inst = BaseModel()
+
         self.assertIs(type(inst), BaseModel)
         inst.name = "Holberton"
         inst.number = 89
+        base_dict = inst.to_dict()
+        inst2 = BaseModel(**base_dict)
+        self.assertIs(type(inst2), BaseModel)
+        self.assertIsNot(inst, inst2)
         attrs_types = {
             "id": str,
             "created_at": datetime,
