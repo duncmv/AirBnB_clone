@@ -50,7 +50,7 @@ class HBNBCommand(cmd.Cmd):
         elif arg not in self.modelnames:
             print("** class doesn't exist **")
         else:
-            new = BaseModel()
+            new = globals()[arg]()
             new.save()
             print(new.id)
 
