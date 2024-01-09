@@ -2,6 +2,7 @@
 """FileStorage module"""
 import json
 from models.base_model import BaseModel
+from models.user import User
 from pathlib import Path
 
 

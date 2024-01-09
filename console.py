@@ -3,6 +3,7 @@
 import cmd
 from models import storage
 from models.base_model import BaseModel
+from models.user import User
 
 
 def extract_words(input_string):
@@ -31,7 +32,7 @@ def extract_words(input_string):
 class HBNBCommand(cmd.Cmd):
     """The HBNB command interpreter class"""
     prompt = "(hbnb) "
-    modelnames = ('BaseModel')
+    modelnames = ('BaseModel', 'User')
 
     def emptyline(self) -> bool:
         return False
