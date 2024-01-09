@@ -9,3 +9,4 @@ x*.*
 x*
 .vscode/*
 __pycache__
+file.json
