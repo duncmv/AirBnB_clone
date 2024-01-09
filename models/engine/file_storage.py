@@ -48,6 +48,6 @@ class FileStorage:
         return self.__objects
 
     def save_changes(self, obj):
-        """when deletion is made, updates __objects and file"""
+        """when deletion/update is made, updates __objects and file"""
         self.__objects = obj
         self.save()
