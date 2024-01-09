@@ -10,3 +10,5 @@ x*
 .vscode/*
 __pycache__
 file.json
+!tests/
+tests/__pycache__
