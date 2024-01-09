@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#The following command will recursively run the pycodestyle check
+# on all the python files in the project. Starts from the parent directory
+# and works its way downwards
+
+# clear
+
+cd ..
+
+find . -type f -name "*.py" -exec pycodestyle {} +
+

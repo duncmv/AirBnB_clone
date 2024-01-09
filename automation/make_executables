@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Following command will make all python files executable
+# It is recursive and works from the parent directory down to
+# the deepest directory
+
+# clear
+
+cd ..
+find . -type f -name "*.py" -exec chmod +x {} +
+
