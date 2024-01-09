@@ -2,7 +2,12 @@
 """The Console module: for interacting with the application backend"""
 import cmd
 from models import storage
+from models.amenity import Amenity
 from models.base_model import BaseModel
+from models.city import City
+from models.place import Place
+from models.review import Review
+from models.state import State
 from models.user import User
 
 
@@ -32,7 +37,8 @@ def extract_words(input_string):
 class HBNBCommand(cmd.Cmd):
     """The HBNB command interpreter class"""
     prompt = "(hbnb) "
-    modelnames = ('BaseModel', 'User')
+    modelnames = ('Amenity', 'BaseModel', 'City', 'Place',
+                  'Review', 'State', 'User')
 
     def emptyline(self) -> bool:
         return False
