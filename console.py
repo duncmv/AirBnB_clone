@@ -3,7 +3,6 @@
 import cmd
 from models import storage
 from models.base_model import BaseModel
-import re
 
 
 def extract_words(input_string):
