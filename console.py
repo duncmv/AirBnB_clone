@@ -6,6 +6,8 @@ from models.base_model import BaseModel
 
 
 def extract_words(input_string):
+    """Extracts command arguments from the interpreter correctly.
+    This is to allow the use of multiple words in quites as argument."""
     words = []
     in_quotes = False
     current_word = ""
