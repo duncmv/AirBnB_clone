@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """The Console module: for interacting with the application backend"""
 import cmd
+import re
 from models import storage
 from models.amenity import Amenity
 from models.base_model import BaseModel
@@ -39,6 +40,38 @@ class HBNBCommand(cmd.Cmd):
     prompt = "(hbnb) "
     modelnames = ('Amenity', 'BaseModel', 'City', 'Place',
                   'Review', 'State', 'User')
+    cmdnames = ('all', 'destroy', 'show', 'count', 'update')
+
+    def default(self, line):
+        """Managing different format of commands"""
+        tokens = line.split('.')
+        if len(tokens) > 1:
+            mat = re.match(r'^\s*([a-zA-Z_]\w*)\.([a-zA-Z_]\w*)\((.*)\)\s*$',
+                              line)
+            if mat:
+                class_name, command, args = mat.groups()
+                if command in self.cmdnames:
+                    args = ''.join(args.split(','))
+                    full_command = f"{command} {class_name} {args}"
+                    self.onecmd(full_command)
+                else:
+                    print(f"** Invalid command: {line} **")
+
+    def do_count(self, arg):
+        """counts number of instances 
+        <classname>.count()
+        """
+        objs = storage.all()
+        if not arg:
+            print("** class name missing **")
+        elif arg not in self.modelnames:
+            print("** class doesn't exist **")
+        else:
+            i = 0
+            for key, value in objs.items():
+                if arg in key:
+                    i += 1
+            print(i)
 
     def emptyline(self) -> bool:
         return False
@@ -58,7 +91,7 @@ class HBNBCommand(cmd.Cmd):
 
     def do_create(self, arg):
         """creates a new instance of a class:
-        create <classname>
+        create <classname> 
         { BaseModel | User | Amenity | City | Review | State | Place }
         """
         if not arg:
@@ -73,6 +106,8 @@ class HBNBCommand(cmd.Cmd):
     def do_show(self, arg):
         """prints string repr of instance:
         show <classname> <id>
+                or
+        <classname>.show(<id>)
         """
         args = extract_words(arg)
         if len(args) < 1:
@@ -91,6 +126,8 @@ class HBNBCommand(cmd.Cmd):
     def do_destroy(self, arg):
         """deletes an instance
         destroy <classname> <id>
+                or
+        <classname>.destroy(<id>)
         """
         args = extract_words(arg)
         if len(args) < 1:
@@ -111,6 +148,8 @@ class HBNBCommand(cmd.Cmd):
         """prints string repr of instances based or not
 on class name:
         all [<classname>]
+                or
+        <classname>.all()
         """
         objs = storage.all()
         if not arg:
@@ -126,6 +165,8 @@ on class name:
     def do_update(self, arg):
         """updates an instance attribute
         update <classname> <id> <attribute> <value>
+                            or
+        <classname>.update(<id>, <attribute>, <value>)
         """
         args = extract_words(arg)
         if len(args) < 1:
