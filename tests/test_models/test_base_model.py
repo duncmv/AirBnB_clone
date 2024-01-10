@@ -4,18 +4,21 @@ from datetime import datetime
 from models.base_model import BaseModel
 import time
 import unittest
+from unittest import mock
 
 
 class TestBaseModel(unittest.TestCase):
     """Test the BaseModel class"""
 
-    def test_instantiation(self):
+    @mock.patch('models.storage')
+    def test_instantiation(self, mock_storage):
         """Test that object is correctly created"""
         inst = BaseModel()
 
         self.assertIs(type(inst), BaseModel)
         inst.name = "Holberton"
         inst.number = 89
+        self.assertTrue(mock_storage.new.called)
         base_dict = inst.to_dict()
         inst2 = BaseModel(**base_dict)
         self.assertIs(type(inst2), BaseModel)
@@ -98,7 +101,8 @@ class TestBaseModel(unittest.TestCase):
         string = "[BaseModel] ({}) {}".format(inst.id, inst.__dict__)
         self.assertEqual(string, str(inst))
 
-    def test_save(self):
+    @mock.patch('models.storage')
+    def test_save(self, mock_storage):
         """Test that save method updates `updated_at` and calls
         `storage.save`"""
         inst = BaseModel()
@@ -109,3 +113,4 @@ class TestBaseModel(unittest.TestCase):
         new_updated_at = inst.updated_at
         self.assertNotEqual(old_updated_at, new_updated_at)
         self.assertEqual(old_created_at, new_created_at)
+        self.assertTrue(mock_storage.save.called)
