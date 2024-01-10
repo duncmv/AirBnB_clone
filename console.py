@@ -152,15 +152,17 @@ on class name:
         <classname>.all()
         """
         objs = storage.all()
+        lis = []
         if not arg:
             for key in objs.keys():
-                print(objs[key])
+                lis.append(str(objs[key]))
         elif arg not in self.modelnames:
             print("** class doesn't exist **")
         else:
             for key, value in objs.items():
                 if arg in key:
-                    print(value)
+                    lis.append(str(value))
+        print(lis)
 
     def do_update(self, arg):
         """updates an instance attribute
