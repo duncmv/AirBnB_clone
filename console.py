@@ -2,6 +2,7 @@
 """The Console module: for interacting with the application backend"""
 import cmd
 import re
+import datetime
 from models import storage
 from models.amenity import Amenity
 from models.base_model import BaseModel
@@ -47,7 +48,7 @@ class HBNBCommand(cmd.Cmd):
         tokens = line.split('.')
         if len(tokens) > 1:
             mat = re.match(r'^\s*([a-zA-Z_]\w*)\.([a-zA-Z_]\w*)\((.*)\)\s*$',
-                              line)
+                           line)
             if mat:
                 class_name, command, args = mat.groups()
                 if command in self.cmdnames:
@@ -58,7 +59,7 @@ class HBNBCommand(cmd.Cmd):
                     print(f"** Invalid command: {line} **")
 
     def do_count(self, arg):
-        """counts number of instances 
+        """counts number of instances
         <classname>.count()
         """
         objs = storage.all()
@@ -91,7 +92,7 @@ class HBNBCommand(cmd.Cmd):
 
     def do_create(self, arg):
         """creates a new instance of a class:
-        create <classname> 
+        create <classname>
         { BaseModel | User | Amenity | City | Review | State | Place }
         """
         if not arg:
@@ -186,7 +187,13 @@ on class name:
             elif len(args) < 4:
                 print("** value missing **")
             else:
-                setattr(objs[f"{args[0]}.{args[1]}"], args[2], args[3])
+                obj = objs[f"{args[0]}.{args[1]}"]
+                type_ = type(getattr(obj, args[2], None))
+                if type_ is datetime.datetime:
+                    v = datetime.datetime(*tuple(map(int, args[3].split())))
+                else:
+                    v = type_(args[3])
+                setattr(objs[f"{args[0]}.{args[1]}"], args[2], v)
                 storage.save_changes(objs)
 
 
