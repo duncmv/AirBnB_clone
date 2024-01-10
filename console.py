@@ -35,7 +35,7 @@ def extract_words(input_string):
 
 
 class HBNBCommand(cmd.Cmd):
-    """The HBNB command interpreter class"""
+    """The HBNB command interpreter"""
     prompt = "(hbnb) "
     modelnames = ('Amenity', 'BaseModel', 'City', 'Place',
                   'Review', 'State', 'User')
@@ -44,16 +44,23 @@ class HBNBCommand(cmd.Cmd):
         return False
 
     def do_quit(self, arg):
-        """Quits the interpreter: QUIT"""
+        """Quits the interpreter:
+        quit
+        """
         return True
 
     def do_EOF(self, arg):
-        """Quits the interpreter: EOF"""
+        """Quits the interpreter:
+        EOF
+        """
         print()
         return True
 
     def do_create(self, arg):
-        """creates a new instance of BaseModel"""
+        """creates a new instance of a class:
+        create <classname>
+        { BaseModel | User | Amenity | City | Review | State | Place }
+        """
         if not arg:
             print("** class name missing **")
         elif arg not in self.modelnames:
@@ -64,7 +71,9 @@ class HBNBCommand(cmd.Cmd):
             print(new.id)
 
     def do_show(self, arg):
-        """prints string repr of instance"""
+        """prints string repr of instance:
+        show <classname> <id>
+        """
         args = extract_words(arg)
         if len(args) < 1:
             print("** class name missing **")
@@ -80,7 +89,9 @@ class HBNBCommand(cmd.Cmd):
                 print(objs[f"{args[0]}.{args[1]}"])
 
     def do_destroy(self, arg):
-        """deletes an instance"""
+        """deletes an instance
+        destroy <classname> <id>
+        """
         args = extract_words(arg)
         if len(args) < 1:
             print("** class name missing **")
@@ -98,7 +109,9 @@ class HBNBCommand(cmd.Cmd):
 
     def do_all(self, arg):
         """prints string repr of instances based or not
-on class name"""
+on class name:
+        all [<classname>]
+        """
         objs = storage.all()
         if not arg:
             for key in objs.keys():
@@ -111,7 +124,9 @@ on class name"""
                     print(value)
 
     def do_update(self, arg):
-        """updates an instance attribute"""
+        """updates an instance attribute
+        update <classname> <id> <attribute> <value>
+        """
         args = extract_words(arg)
         if len(args) < 1:
             print("** class name missing **")
