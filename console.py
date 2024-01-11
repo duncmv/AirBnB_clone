@@ -2,6 +2,8 @@
 """The Console module: for interacting with the application backend"""
 import cmd
 import re
+import os
+import json
 from models import storage
 from models.amenity import Amenity
 from models.base_model import BaseModel
@@ -46,19 +48,27 @@ class HBNBCommand(cmd.Cmd):
         """Managing different format of commands"""
         tokens = line.split('.')
         if len(tokens) > 1:
+            # target: User.update("uuid", "first_name", "John")
+            # Result: ["User", "update", "uuid", "first_name", "John"]
+            # target: User.update("bef0b8", {"name": "iyke"})
+            # Result: ['User', 'update', '"bef0b8", {"name": "iyke"}']
             mat = re.match(r'^\s*([a-zA-Z_]\w*)\.([a-zA-Z_]\w*)\((.*)\)\s*$',
-                              line)
+                           line)
             if mat:
                 class_name, command, args = mat.groups()
                 if command in self.cmdnames:
-                    args = ''.join(args.split(','))
-                    full_command = f"{command} {class_name} {args}"
-                    self.onecmd(full_command)
+                    if re.findall(r"({.*?})", args):  # If args contains a dict
+                        # Replace the comma after the id & leave the others
+                        args = args.replace(",", "", 1)
+                        self.onecmd(f"{command} {class_name} {args}")
+                    else:
+                        args = ''.join(args.split(','))
+                        self.onecmd(f"{command} {class_name} {args}")
                 else:
                     print(f"** Invalid command: {line} **")
 
     def do_count(self, arg):
-        """counts number of instances 
+        """counts number of instances
         <classname>.count()
         """
         objs = storage.all()
@@ -91,7 +101,7 @@ class HBNBCommand(cmd.Cmd):
 
     def do_create(self, arg):
         """creates a new instance of a class:
-        create <classname> 
+        create <classname>
         { BaseModel | User | Amenity | City | Review | State | Place }
         """
         if not arg:
@@ -170,6 +180,8 @@ on class name:
                             or
         <classname>.update(<id>, <attribute>, <value>)
         """
+        if re.findall(r"({.*?})", arg):  # If args contains a dict
+            arg = arg.replace("'", "\"")  # Replace any single quotes
         args = extract_words(arg)
         if len(args) < 1:
             print("** class name missing **")
@@ -185,9 +197,29 @@ on class name:
                 print("** attribute name missing **")
             elif len(args) < 4:
                 print("** value missing **")
-            else:
-                setattr(objs[f"{args[0]}.{args[1]}"], args[2], args[3])
+            else:  # NOTE: id, created_at and updated_at aren't updated
+                regexp = r"({.*?})"  # dicts only
+                matches = re.findall(regexp, arg)
+                obj = objs[f"{args[0]}.{args[1]}"]
+                if matches:  # UPDATE id {name: John}
+                    dict_ = json.loads(matches[0])  # Only 1 dict expected
+                    for key, value in dict_.items():
+                        # Get the type of the dit item, default type is str
+                        type_ = type(dict_.get(key) or "")
+                        v = type_(value)
+                        setattr(objs[f"{args[0]}.{args[1]}"], key, v)
+                else:  # UPDATE id first_name michael
+                    type_ = type(getattr(obj, args[2], str))
+                    v = type_(args[3])
+                    setattr(objs[f"{args[0]}.{args[1]}"], args[2], v)
                 storage.save_changes(objs)
+
+    def do_cls(self, arg):
+        """clears the screen: CLS"""
+        if os.name == "nt":
+            os.system("cls")
+        else:
+            os.system("clear")
 
 
 if __name__ == "__main__":
