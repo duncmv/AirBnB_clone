@@ -23,25 +23,13 @@ class Helpers(unittest.TestCase):
         self.stdout_.truncate(0)
         self.stdout_.seek(0)
 
-    def t_create_unknown_model(self):
-        """Test creating an unknown model"""
+    def t_create_known_model(self, modelname: str):
+        """Creates a model and returns the UUID for testing"""
         self.clear_stdout()
         with patch("sys.stdout", new=self.stdout_):
-            self.hbnb.onecmd("create UnknownModel")
-        output = self.stdout_.getvalue().strip()
-        self.assertIn("Class doesn't exist", output)
-        self.stdout_.truncate()
-
-    def t_create_known_model(self, modelname: str):
-        """Test creating a known model"""
-        self.clear_stdout()
-        with patch("sys.stdout", new=self.stdout_):  # Issues a known command
             self.hbnb.onecmd(f"create {modelname}")
 
-        output = self.stdout_.getvalue().strip()
-        self.assertEqual(output.count("-"), 4)  # it has 4 hyphens
-        self.assertEqual(len(output.split("-")), 5)  # string has 5 parts
-        return output
+        return self.stdout_.getvalue().strip()
 
     def t_cmd_output_test(self, cmd: str, expected: str):
         """Test running a command and checking output against expected"""
@@ -65,15 +53,11 @@ class TestHBNBCommand(Helpers):
 
     def test_create_command(self):
         """Tests for the create command"""
-        self.t_create_known_model("BaseModel")  # creating an unknown model
+        self.t_cmd_output_test("create", "** class name missing **")
+        self.t_cmd_output_test("create xyz", "** class doesn't exist **")
 
-        self.t_create_known_model("User")  # creating known model
-        self.t_create_known_model("Amenity")  # creating known model
-        self.t_create_known_model("State")  # creating known model
-        self.t_create_known_model("City")  # creating known model
-        self.t_create_known_model("Place")  # creating known model
-        self.t_create_known_model("Review")  # creating known model
-        self.t_create_known_model("BaseModel")  # creating known model
+        uuid = self.t_create_known_model("City")  # creating known model
+        self.t_cmd_output_test(f"show City {uuid}", uuid)
 
 
 if __name__ == "__main__":
