@@ -12,3 +12,6 @@ __pycache__
 file.json
 !tests/
 tests/__pycache__
+*.log
+log
+logs

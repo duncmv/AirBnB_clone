@@ -45,27 +45,30 @@ class HBNBCommand(cmd.Cmd):
     cmdnames = ('all', 'destroy', 'show', 'count', 'update')
 
     def default(self, line):
-        """Managing different format of commands"""
-        tokens = line.split('.')
-        if len(tokens) > 1:
-            # target: User.update("uuid", "first_name", "John")
-            # Result: ["User", "update", "uuid", "first_name", "John"]
-            # target: User.update("bef0b8", {"name": "iyke"})
-            # Result: ['User', 'update', '"bef0b8", {"name": "iyke"}']
-            mat = re.match(r'^\s*([a-zA-Z_]\w*)\.([a-zA-Z_]\w*)\((.*)\)\s*$',
-                           line)
-            if mat:
-                class_name, command, args = mat.groups()
-                if command in self.cmdnames:
-                    if re.findall(r"({.*?})", args):  # If args contains a dict
-                        # Replace the comma after the id & leave the others
-                        args = args.replace(",", "", 1)
-                        self.onecmd(f"{command} {class_name} {args}")
-                    else:
-                        args = ''.join(args.split(','))
-                        self.onecmd(f"{command} {class_name} {args}")
+        """Overrides the default() method to allow/support different format
+        of commands. If no proper handler for the input was found execution
+        is made to proceed to the super class' default handling"""
+
+        # target: User.update("uuid", "first_name", "John")
+        # Result: ["User", "update", "uuid", "first_name", "John"]
+        # target: User.update("bef0b8", {"name": "iyke"})
+        # Result: ['User', 'update', '"bef0b8", {"name": "iyke"}']
+        mat = re.match(r'^\s*([a-zA-Z_]\w*)\.([a-zA-Z_]\w*)\((.*)\)\s*$',
+                       line)
+        if mat:
+            class_name, command, args = mat.groups()
+            if command in self.cmdnames:
+                if re.findall(r"({.*?})", args):  # If args contains a dict
+                    # Replace the comma after the id & leave the others
+                    args = args.replace(",", "", 1)
+                    self.onecmd(f"{command} {class_name} {args}")
                 else:
-                    print(f"** Invalid command: {line} **")
+                    args = ''.join(args.split(','))
+                    self.onecmd(f"{command} {class_name} {args}")
+            else:
+                print(f"** Invalid command: {line} **")
+        else:  # An approperiate handler wasn't found
+            return super().default(line)
 
     def do_count(self, arg):
         """counts number of instances
