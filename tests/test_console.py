@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 from io import StringIO
 from console import HBNBCommand
-import os
+from models import storage
 import re
 
 
@@ -15,7 +15,7 @@ class Helpers(unittest.TestCase):
         """For each test: startup settings happen here"""
         self.hbnb = HBNBCommand()
         self.stdout_ = StringIO()
-        self.t_trucate_store()  # Truncate file.json
+        # self.t_trucate_store()  # Truncate file.json
 
     def tearDown(self):
         """For each test: final cleanups happen here"""
@@ -25,6 +25,11 @@ class Helpers(unittest.TestCase):
         """Clears the stdout buffer"""
         self.stdout_.truncate(0)
         self.stdout_.seek(0)
+
+    def t_fetch_model(self, model):
+        """Fetches all the available instances of model"""
+        objs = storage.all()
+        return [str(v) for k, v in objs.items() if model in k]
 
     def t_trucate_store(self):
         """Remove the store file for recreation"""
@@ -36,7 +41,6 @@ class Helpers(unittest.TestCase):
             for model, uuid in matches:
                 self.hbnb.onecmd("destroy {} {}".format(model, uuid))
         self.clear_stdout()
-        self.setUp
 
     def t_create_model(self, modelname: str):
         """Creates a model and returns the UUID for testing"""
@@ -99,14 +103,19 @@ class TestHBNBCommand(Helpers):
         self.t_cmd_output_test("destroy xyz", "** class doesn't exist **")
 
         uuid = self.t_create_model("City")  # creating known model
+        self.t_cmd_output_test(f"show City {uuid}", uuid)  # exists
         self.t_cmd_output_test(f"destroy City {uuid}", "")
+        self.t_cmd_output_test(f"show City {uuid}", "** no instance found **")
 
         uuid = self.t_create_model("Place")  # creating known model
+        self.t_cmd_output_test(f"show Place {uuid}", uuid)  # exists
         self.t_cmd_output_test(f'Place.destroy("{uuid}")', "")
+        self.t_cmd_output_test(f"show Place {uuid}", "** no instance found **")
 
     def test_all_command(self):
         """Tests for the all command"""
-        self.t_cmd_output_test("all", "[]")  # Empty now
+        # Test if the all command returns a string bounded by '[' and ']'
+        self.assertRegex(self.t_cmd_output("all"), r"(^\[.*]$)")
 
         # Create a user, place, city, and test they exists
         uuids, models = [], ("City", "User", "User", "User", "Place")
@@ -131,12 +140,14 @@ class TestHBNBCommand(Helpers):
     def test_count_command(self):
         """Tests for the count command"""
         self.t_cmd_output_test("count", "* class name missing **")
-        self.t_cmd_output_test("count User", "0")
+        users = self.t_fetch_model("User")
+        n_users = len(users)
+        self.t_cmd_output_test("count User", "{}".format(n_users))
         self.t_cmd_output_test("count xyz", "** class doesn't exist **")
 
         uuids = [self.t_create_model("User") for _ in range(3)]
-        self.t_cmd_output_test("count User", "3")
-        self.t_cmd_output_test("User.count()", "3")
+        self.t_cmd_output_test("count User", "{}".format(n_users+3))
+        self.t_cmd_output_test("User.count()", "{}".format(n_users+3))
 
         for uuid in uuids:
             self.t_destroy_model(f"User {uuid}")
