@@ -16,7 +16,9 @@ do
  files+=("$fil")
 done < <(find . -type f -name "*.py" -print0)
 
+
 # List all non executable file in the list
 for f in ${files[@]}
 do list_non_executable "$f"
+# ls -n "$f" | tr -s " " " " | cut -d " " -f1,6-
 done

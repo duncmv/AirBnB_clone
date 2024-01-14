@@ -10,7 +10,7 @@ cd ..
 
 while IFS= read -r -d "" file; do
 	if [ ! -x "$file" ]; then # if file is not executable make it executable
-		# chmod +x "$file"
+		chmod +x "$file"
 		ls -n "$file" | tr -s " " " " | cut -d " " -f1,6-
 	fi
 done < <(find . -type f -name "*.py" -print0)
