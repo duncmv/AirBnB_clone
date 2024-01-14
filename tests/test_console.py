@@ -33,7 +33,7 @@ class Helpers(unittest.TestCase):
 
     def t_trucate_store(self):
         """Remove the store file for recreation"""
-        reg = "\[(\w+)] \(([\w-]+)\)"
+        reg = r"\[(\w+)] \(([\w-]+)\)"
         self.clear_stdout()
         with patch("sys.stdout", new=self.stdout_):
             self.hbnb.onecmd(f"all")

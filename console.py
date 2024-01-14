@@ -18,10 +18,10 @@ def get_type(data: str):
     """Determine the data type contained in the string"""
     try:
         return type(int(data))
-    except:
+    except Exception:
         try:
             return type(float(data))
-        except:
+        except Exception:
             return str
 
 
