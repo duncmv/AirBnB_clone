@@ -5,76 +5,145 @@ from unittest.mock import patch
 from io import StringIO
 from console import HBNBCommand
 from models import storage
+from models.engine.file_storage import FileStorage
 import re
+import os
 
 
 class Helpers(unittest.TestCase):
     """Class to keep helper functions together"""
 
-    def setUp(self):
-        """For each test: startup settings happen here"""
-        self.hbnb = HBNBCommand()
-        self.stdout_ = StringIO()
-        # self.t_trucate_store()  # Truncate file.json
+    @classmethod
+    def setUpClass(cls):
+        """This runs once before any of the tests"""
+        try:
+            os.rename("file.json", "tmp.json")
+        except IOError:
+            pass
+        FileStorage._FileStorage__objects = {}
 
-    def tearDown(self):
-        """For each test: final cleanups happen here"""
-        self.stdout_.close()
+    @classmethod
+    def tearDownClass(cls):
+        """This runs once after all of the tests are done"""
+        try:
+            os.unlink("file.json")
+        except IOError:
+            pass
+        try:
+            os.rename("tmp.json", "file.json")
+        except IOError:
+            pass
 
-    def clear_stdout(self):
-        """Clears the stdout buffer"""
-        self.stdout_.truncate(0)
-        self.stdout_.seek(0)
+    def t_cmd_assert_false(self, cmd: str) -> str:
+        """Run cmd and perform assert false on the output, return output"""
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.assertFalse(HBNBCommand().onecmd(cmd))
+            output = f.getvalue().strip()
+        return output
+
+    def t_cmd_assert_true(self, cmd: str) -> str:
+        """Run cmd and perform assert true on the output, return output"""
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.assertTrue(HBNBCommand().onecmd(cmd))
+            output = f.getvalue().strip()
+        return output
 
     def t_fetch_model(self, model):
         """Fetches all the available instances of model"""
         objs = storage.all()
-        return [str(v) for k, v in objs.items() if model in k]
+        if model:  # fetch only required
+            return [str(v) for k, v in objs.items() if model in k]
+        return [str(v) for v in objs.values()]  # Fetch all
 
     def t_trucate_store(self):
         """Remove the store file for recreation"""
         reg = r"\[(\w+)] \(([\w-]+)\)"
-        self.clear_stdout()
-        with patch("sys.stdout", new=self.stdout_):
-            self.hbnb.onecmd(f"all")
-            matches = re.findall(reg, self.stdout_.getvalue().strip())
+        with patch("sys.stdout", new=StringIO()) as f:
+            HBNBCommand().onecmd(f"all")
+            matches = re.findall(reg, f.getvalue().strip())
             for model, uuid in matches:
-                self.hbnb.onecmd("destroy {} {}".format(model, uuid))
-        self.clear_stdout()
+                HBNBCommand().onecmd("destroy {} {}".format(model, uuid))
 
     def t_create_model(self, modelname: str):
         """Creates a model and returns the UUID for testing"""
-        self.clear_stdout()
-        with patch("sys.stdout", new=self.stdout_):
-            self.hbnb.onecmd(f"create {modelname}")
-
-        return self.stdout_.getvalue().strip()
+        with patch("sys.stdout", new=StringIO()) as f:
+            HBNBCommand().onecmd(f"create {modelname}")
+        return f.getvalue().strip()
 
     def t_destroy_model(self, name_id: str):
         """Destroys a model and returns the output for testing"""
-        self.clear_stdout()
-        with patch("sys.stdout", new=self.stdout_):
-            self.hbnb.onecmd(f"destroy {name_id}")
+        with patch("sys.stdout", new=StringIO()) as f:
+            HBNBCommand().onecmd(f"destroy {name_id}")
 
-        return self.stdout_.getvalue().strip()
+        return f.getvalue().strip()
 
     def t_cmd_output_test(self, cmd: str, expected: str):
         """Test running a command and checking output against expected"""
-        self.clear_stdout()
-        with patch("sys.stdout", new=self.stdout_):
-            self.hbnb.onecmd(cmd)
-        self.assertIn(expected, self.stdout_.getvalue().strip())
+        with patch("sys.stdout", new=StringIO()) as f:
+            HBNBCommand().onecmd(cmd)
+            output = f.getvalue().strip()
+        self.assertIn(expected, output)
+
+    def t_cmd_assert_equal(self, cmd: str, expected: str) -> str:
+        """Run cmd and perform assert equal on the output, return output"""
+        with patch("sys.stdout", new=StringIO()) as f:
+            HBNBCommand().onecmd(cmd)
+            output = f.getvalue().strip()
+            self.assertEqual(output, expected)
+        return output
 
     def t_cmd_output(self, cmd: str) -> str:
         """Runs a command and returns its output"""
-        self.clear_stdout()
-        with patch("sys.stdout", new=self.stdout_):
-            self.hbnb.onecmd(cmd)
-        return self.stdout_.getvalue().strip()
+        with patch("sys.stdout", new=StringIO()) as f:
+            HBNBCommand().onecmd(cmd)
+            output = f.getvalue().strip()
+        return output
 
 
 class TestHBNBCommand(Helpers):
     """The HBNHCommand tests class"""
+
+    def test_empty_line(self):
+        output = self.t_cmd_assert_false("")
+        self.assertEqual(output, "")
+
+    def test_prompt_string(self):
+        """Test if the prompt string is in order"""
+        self.assertEqual("(hbnb) ", HBNBCommand.prompt)
+
+    def test_quit(self):
+        """Test the quit command"""
+        self.t_cmd_assert_true("quit")
+
+    def test_EOF(self):
+        """Test the EOF command"""
+        self.t_cmd_assert_true("EOF")
+
+    def test_cls(self):
+        """Test the cls command"""
+        self.t_cmd_assert_false("cls")
+        uuid = self.t_create_model("User")
+        output = self.t_cmd_output("all")
+        self.assertTrue(output)  # True means the string is not empty
+        output = self.t_cmd_assert_false("cls")
+        self.assertFalse(output)  # The string is empty
+        self.t_destroy_model(f"User {uuid}")  # Destroy the User
+
+    def test_help(self):
+        """Test the help"""
+        txt = "Documented commands (type help <topic>):\n"
+        txt += "========================================\n"
+        self.t_cmd_output_test("help", txt)  # uses self.assertIn
+        self.t_cmd_output_test("?", txt)  # uses self.assertIn
+        self.t_cmd_assert_false("help all")
+        self.t_cmd_assert_false("help EOF")
+        self.t_cmd_assert_false("help count")
+        self.t_cmd_assert_false("help create")
+        self.t_cmd_assert_false("help destroy")
+        self.t_cmd_assert_false("help help")
+        self.t_cmd_assert_false("help quit")
+        self.t_cmd_assert_false("help show")
+        self.t_cmd_assert_false("help update")
 
     def test_show_command(self):
         """Tests for the show command"""
