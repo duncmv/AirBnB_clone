@@ -145,6 +145,56 @@ class TestHBNBCommand(Helpers):
         self.t_cmd_assert_false("help show")
         self.t_cmd_assert_false("help update")
 
+    def test_create_command(self):
+        """Tests for the create command"""
+        self.t_cmd_output_test("create", "** class name missing **")
+        self.t_cmd_output_test("create xyz", "** class doesn't exist **")
+
+        models = "BaseModel User City Place Amenity Review State".split(" ")
+        # Test that creating any of them is successful
+        uuids = [self.t_cmd_assert_false(f"create {mdl}") for mdl in models]
+
+        # confirm that each object can be retrieved
+        for model, uuid in zip(models, uuids):
+            self.t_cmd_output_test(f"show {model} {uuid}", uuid)
+
+        output = self.t_cmd_output("all")  # output of the all command
+        for uuid in uuids:  # test against output
+            self.assertIn(uuid, output)
+        for model, uuid in zip(models, uuids):  # Delete all
+            self.t_cmd_assert_false(f"destroy {model} {uuid}")
+
+        for model, uuid in zip(models, uuids):  # confirm deletion
+            # True means that the comamnd throws an error
+            self.t_cmd_output_test(
+                f"show {model} {uuid}", "** no instance found **")
+
+    def test_update_command(self):
+        """Tests update command"""
+        self.t_cmd_output_test("update", "* class name missing **")
+        self.t_cmd_output_test("update xyz", "** class doesn't exist **")
+        self.t_cmd_output_test("update User", "** instance id missing **")
+
+        ud = self.t_create_model("User")
+        self.t_cmd_output_test(f"show User {ud}", ud)  # check that User exists
+        self.t_cmd_output_test(f"update User {ud}", "attribute name missing")
+
+        # Test for different ways of using the update command
+        expected = """'email': 'abc@gmail.com'"""  # Update the nomal way
+        self.t_cmd_output_test(f'update User {ud} email "abc@gmail.com"', "")
+        self.t_cmd_output_test(f"show User {ud}", expected)  # Did it work?
+
+        expected = """'age': 36"""  # Update using dot notation
+        self.t_cmd_output_test(f'User.update("{ud}", "age", 36)', "")
+        self.t_cmd_output_test(f"show User {ud}", expected)  # Did it work?
+
+        expected = """'name': 'Michael'"""  # Update using dot notation
+        self.t_cmd_output_test(
+            f'User.update("{ud}", {{"name": "Michael"}})', "")
+        self.t_cmd_output_test(f"show User {ud}", expected)  # Did it work?
+
+        self.t_destroy_model(f"User {ud}")  # Destroy the  created user
+
     def test_show_command(self):
         """Tests for the show command"""
         self.t_cmd_output_test("show", "* class name missing **")
@@ -155,15 +205,6 @@ class TestHBNBCommand(Helpers):
         self.t_cmd_output_test(f"show User {uuid}", uuid)
         self.t_cmd_output_test(f'User.show("{uuid}")', uuid)
         self.t_destroy_model(f"User {uuid}")
-
-    def test_create_command(self):
-        """Tests for the create command"""
-        self.t_cmd_output_test("create", "** class name missing **")
-        self.t_cmd_output_test("create xyz", "** class doesn't exist **")
-
-        uuid = self.t_create_model("City")  # creating known model
-        self.t_cmd_output_test(f"show City {uuid}", uuid)
-        self.t_destroy_model(f"City {uuid}")
 
     def test_destroy_command(self):
         """Tests for the destroy command"""
@@ -220,32 +261,6 @@ class TestHBNBCommand(Helpers):
 
         for uuid in uuids:
             self.t_destroy_model(f"User {uuid}")
-
-    def test_update_command(self):
-        """Tests update command"""
-        self.t_cmd_output_test("update", "* class name missing **")
-        self.t_cmd_output_test("update xyz", "** class doesn't exist **")
-        self.t_cmd_output_test("update User", "** instance id missing **")
-
-        ud = self.t_create_model("User")
-        self.t_cmd_output_test(f"show User {ud}", ud)  # check that User exists
-        self.t_cmd_output_test(f"update User {ud}", "attribute name missing")
-
-        # Test for different ways of using the update command
-        expected = """'email': 'abc@gmail.com'"""  # Update the nomal way
-        self.t_cmd_output_test(f'update User {ud} email "abc@gmail.com"', "")
-        self.t_cmd_output_test(f"show User {ud}", expected)  # Did it work?
-
-        expected = """'age': 36"""  # Update using dot notation
-        self.t_cmd_output_test(f'User.update("{ud}", "age", 36)', "")
-        self.t_cmd_output_test(f"show User {ud}", expected)  # Did it work?
-
-        expected = """'name': 'Michael'"""  # Update using dot notation
-        self.t_cmd_output_test(
-            f'User.update("{ud}", {{"name": "Michael"}})', "")
-        self.t_cmd_output_test(f"show User {ud}", expected)  # Did it work?
-
-        self.t_destroy_model(f"User {ud}")  # Destroy the  created user
 
 
 if __name__ == "__main__":
