@@ -35,7 +35,9 @@ class Helpers(unittest.TestCase):
             pass
 
     def t_cmd_assert_false(self, cmd: str) -> str:
-        """Run cmd and perform assert false on the output, return output"""
+        """Run cmd and perform assert false on the output, return output
+        Used to test if running a command is successful
+        """
         with patch("sys.stdout", new=StringIO()) as f:
             self.assertFalse(HBNBCommand().onecmd(cmd))
             output = f.getvalue().strip()
@@ -149,25 +151,26 @@ class TestHBNBCommand(Helpers):
         """Tests for the create command"""
         self.t_cmd_output_test("create", "** class name missing **")
         self.t_cmd_output_test("create xyz", "** class doesn't exist **")
-
+        # Create these models and test that creating is succeessful
         models = "BaseModel User City Place Amenity Review State".split(" ")
-        # Test that creating any of them is successful
         uuids = [self.t_cmd_assert_false(f"create {mdl}") for mdl in models]
 
-        # confirm that each object can be retrieved
+        # Test that each object can be retrieved
         for model, uuid in zip(models, uuids):
             self.t_cmd_output_test(f"show {model} {uuid}", uuid)
 
-        output = self.t_cmd_output("all")  # output of the all command
-        for uuid in uuids:  # test against output
+        # Test against the output of the all command
+        output = self.t_cmd_output("all")
+        for uuid in uuids:
             self.assertIn(uuid, output)
-        for model, uuid in zip(models, uuids):  # Delete all
+        # Test deleting all
+        for model, uuid in zip(models, uuids):
             self.t_cmd_assert_false(f"destroy {model} {uuid}")
 
-        for model, uuid in zip(models, uuids):  # confirm deletion
-            # True means that the comamnd throws an error
-            self.t_cmd_output_test(
-                f"show {model} {uuid}", "** no instance found **")
+        # Test that deletion succeeded
+        for model, uuid in zip(models, uuids):
+            expected = "** no instance found **"
+            self.t_cmd_output_test(f"show {model} {uuid}", expected)
 
     def test_update_command(self):
         """Tests update command"""
