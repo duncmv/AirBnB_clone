@@ -142,7 +142,7 @@ class Helpers(unittest.TestCase):
 
         return f.getvalue().strip()
 
-    def t_test_output_in_outputs(self, outputs: [str], big_output: str):
+    def t_test_output_in_outputs(self, outputs: list, big_output: str):
         """Test if each of unit ouputs if found in a single larger one"""
         for output in outputs:
             self.assertIn(output, big_output)
@@ -281,28 +281,23 @@ class TestHBNBCommand(Helpers):
 
     def test_all_command(self):
         """Tests for the all command"""
-        # Test if the all command returns a string bounded by '[' and ']'
+        self.t_cmd_output_test("all xyz", "** class doesn't exist **")
+        self.t_cmd_output_test("User.all", "*** Unknown syntax:")
+        self.t_cmd_output_test("User.all(aca9)", "class doesn't exist")
+        self.t_cmd_output_test('User.all("aca9")', "class doesn't exist")
+
+        # Test that all returns a string bounded by a '[' and a ']'
         self.assertRegex(self.t_cmd_output("all"), r"(^\[.*]$)")
+        uuids = self.t_create_all_models()  # create all model forms
+        outputs = self.t_show_all_models(uuids)  # like the all command
+        self.t_test_output_in_outputs(uuids, outputs)  # uuids are present
 
-        # Create a user, place, city, and test they exists
-        uuids, models = [], ("City", "User", "User", "User", "Place")
-        for model in models:  # create them
-            uuids.append(self.t_create_model(model))
-
-        output = self.t_cmd_output("all")
-        for uuid in uuids:  # test that the each uuid is present in the output
-            self.assertIn(uuid, output)
-
-        output = self.t_cmd_output("all User")
-        for uuid in uuids[1:4]:  # test that all three users appear in output
-            self.assertIn(uuid, output)
-
-        output = self.t_cmd_output("User.all()")
-        for uuid in uuids[1:4]:  # test that all three users appear in output
-            self.assertIn(uuid, output)
-
-        for model, uuid in zip(models, uuids):
-            self.t_destroy_model(f"{model} {uuid}")  # destroy them
+        # command type: User.all()
+        for model, uuid in zip(self.models, uuids):
+            self.t_cmd_output_test(f'{model}.all()', uuid)
+        # command type: all User
+        for model, uuid in zip(self.models, uuids):
+            self.t_cmd_output_test(f'all {model}', uuid)
 
     def test_count_command(self):
         """Tests for the count command"""
