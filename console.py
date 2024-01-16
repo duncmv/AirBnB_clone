@@ -227,7 +227,6 @@ on class name:
                     v = type_(args[3])
                     if type_ is str:
                         v = get_type(args[3])(args[3])
-                    print(v, type_)
                     setattr(objs[f"{args[0]}.{args[1]}"], args[2], v)
                 storage.save_changes(objs)
 
