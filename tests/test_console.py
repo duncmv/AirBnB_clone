@@ -12,6 +12,7 @@ import os
 
 class Helpers(unittest.TestCase):
     """Class to keep helper functions together"""
+    models = "BaseModel User City Place Amenity Review State".split(" ")
 
     @classmethod
     def setUpClass(cls):
@@ -66,19 +67,6 @@ class Helpers(unittest.TestCase):
             for model, uuid in matches:
                 HBNBCommand().onecmd("destroy {} {}".format(model, uuid))
 
-    def t_create_model(self, modelname: str):
-        """Creates a model and returns the UUID for testing"""
-        with patch("sys.stdout", new=StringIO()) as f:
-            HBNBCommand().onecmd(f"create {modelname}")
-        return f.getvalue().strip()
-
-    def t_destroy_model(self, name_id: str):
-        """Destroys a model and returns the output for testing"""
-        with patch("sys.stdout", new=StringIO()) as f:
-            HBNBCommand().onecmd(f"destroy {name_id}")
-
-        return f.getvalue().strip()
-
     def t_cmd_output_test(self, cmd: str, expected: str):
         """Test running a command and checking output against expected"""
         with patch("sys.stdout", new=StringIO()) as f:
@@ -100,6 +88,64 @@ class Helpers(unittest.TestCase):
             HBNBCommand().onecmd(cmd)
             output = f.getvalue().strip()
         return output
+
+    def t_create_all_models(self):
+        """Tests that showing all models is successful
+        Returns the uuids of showed models for manipulation
+        The uuids must be in the order of class attribute models"""
+        # Create these models and test that creating is succeessful
+        models = self.models
+        return [self.t_cmd_assert_false(f"create {mdl}") for mdl in models]
+
+    def t_test_uuids_present(self, uuids: str):
+        """Test that all the uuids are present in the store
+        The uuids must be in the order of the class attribute models"""
+        for model, uuid in zip(self.models, uuids):
+            self.t_cmd_assert_false(f"show {model} {uuid}")
+
+    def t_test_uuids_absent(self, uuids: str):
+        """Test that all the uuids are absent in the store
+        The uuids must be in the order of the class attribute models"""
+        for model, uuid in zip(self.models, uuids):
+            expected = "** no instance found **"
+            self.t_cmd_output_test(f"show {model} {uuid}", expected)
+
+    def t_show_all_models(self, uuids: list) -> str:
+        """Tests that showing all models is successful
+        Returns a single combined output strings for testing
+        The uuids must be in the order of class attribute models"""
+        # Show these models and test that showing is succeessful
+        outputs = [
+            self.t_cmd_output(f"show {model} {uuid}")
+            for model, uuid in zip(self.models, uuids)]
+        return "".join(outputs)
+
+    def t_destroy_all_models(self, uuids: list):
+        """Tests that destroying all models is successful
+        Returns the uuids of destroyed models for testing
+        The returned uuids must be in the order of class attribute models"""
+        # Destroy these models and test that destroying is succeessful
+        for model, uuid in zip(self.models, uuids):
+            self.t_cmd_assert_false(f"destroy {model} {uuid}")
+        return uuids
+
+    def t_create_model(self, modelname: str):
+        """Creates a model and returns the UUID for testing"""
+        with patch("sys.stdout", new=StringIO()) as f:
+            HBNBCommand().onecmd(f"create {modelname}")
+        return f.getvalue().strip()
+
+    def t_destroy_model(self, name_id: str):
+        """Destroys a model and returns the output for testing"""
+        with patch("sys.stdout", new=StringIO()) as f:
+            HBNBCommand().onecmd(f"destroy {name_id}")
+
+        return f.getvalue().strip()
+
+    def t_test_output_in_outputs(self, outputs: [str], big_output: str):
+        """Test if each of unit ouputs if found in a single larger one"""
+        for output in outputs:
+            self.assertIn(output, big_output)
 
 
 class TestHBNBCommand(Helpers):
@@ -147,31 +193,6 @@ class TestHBNBCommand(Helpers):
         self.t_cmd_assert_false("help show")
         self.t_cmd_assert_false("help update")
 
-    def test_create_command(self):
-        """Tests for the create command"""
-        self.t_cmd_output_test("create", "** class name missing **")
-        self.t_cmd_output_test("create xyz", "** class doesn't exist **")
-        # Create these models and test that creating is succeessful
-        models = "BaseModel User City Place Amenity Review State".split(" ")
-        uuids = [self.t_cmd_assert_false(f"create {mdl}") for mdl in models]
-
-        # Test that each object can be retrieved
-        for model, uuid in zip(models, uuids):
-            self.t_cmd_output_test(f"show {model} {uuid}", uuid)
-
-        # Test against the output of the all command
-        output = self.t_cmd_output("all")
-        for uuid in uuids:
-            self.assertIn(uuid, output)
-        # Test deleting all
-        for model, uuid in zip(models, uuids):
-            self.t_cmd_assert_false(f"destroy {model} {uuid}")
-
-        # Test that deletion succeeded
-        for model, uuid in zip(models, uuids):
-            expected = "** no instance found **"
-            self.t_cmd_output_test(f"show {model} {uuid}", expected)
-
     def test_update_command(self):
         """Tests update command"""
         self.t_cmd_output_test("update", "* class name missing **")
@@ -198,16 +219,44 @@ class TestHBNBCommand(Helpers):
 
         self.t_destroy_model(f"User {ud}")  # Destroy the  created user
 
+    def test_create_command(self):
+        """Tests for the create command"""
+        self.t_cmd_output_test("create", "** class name missing **")
+        self.t_cmd_output_test("create xyz", "** class doesn't exist **")
+
+        # Create these models and test that creating is succeessful
+        uuids = self.t_create_all_models()
+        # Test that each object can be retrieved
+        outputs = self.t_show_all_models(uuids)
+        # Test against the sort of the output of the all command
+        self.t_test_output_in_outputs(uuids, outputs)
+        # Test deleting all
+        self.t_destroy_all_models(uuids)
+        # Test that deletion succeeded
+        self.t_test_uuids_absent(uuids)
+
     def test_show_command(self):
         """Tests for the show command"""
         self.t_cmd_output_test("show", "* class name missing **")
         self.t_cmd_output_test("show User", "** instance id missing **")
         self.t_cmd_output_test("show xyz", "** class doesn't exist **")
 
-        uuid = self.t_create_model("User")
-        self.t_cmd_output_test(f"show User {uuid}", uuid)
-        self.t_cmd_output_test(f'User.show("{uuid}")', uuid)
-        self.t_destroy_model(f"User {uuid}")
+        # Create these models and test that creating is succeessful
+        uuids = self.t_create_all_models()
+
+        # Testing of outputs
+        # SHOW User uuid
+        outputs = self.t_show_all_models(uuids)
+        # User.show("uuid")
+        for model, uuid in zip(self.models, uuids):
+            self.t_cmd_output_test(f'{model}.show("{uuid}")', uuid)
+
+        # Testing that all are present
+        self.t_test_output_in_outputs(uuids, outputs)
+        # Test deleting all
+        self.t_destroy_all_models(uuids)
+        # Test that deletion succeeded
+        self.t_test_uuids_absent(uuids)
 
     def test_destroy_command(self):
         """Tests for the destroy command"""
@@ -215,15 +264,20 @@ class TestHBNBCommand(Helpers):
         self.t_cmd_output_test("destroy User", "** instance id missing **")
         self.t_cmd_output_test("destroy xyz", "** class doesn't exist **")
 
-        uuid = self.t_create_model("City")  # creating known model
-        self.t_cmd_output_test(f"show City {uuid}", uuid)  # exists
-        self.t_cmd_output_test(f"destroy City {uuid}", "")
-        self.t_cmd_output_test(f"show City {uuid}", "** no instance found **")
+        # Create these models and test that creating is succeessful
+        uuids = self.t_create_all_models()
+        outputs = self.t_show_all_models(uuids)  # like the all command
+        # Test that the uuids are present
+        self.t_test_output_in_outputs(uuids, outputs)  # Test deleting all
+        self.t_destroy_all_models(uuids)  # Test that deletion succeeded
+        self.t_test_uuids_absent(uuids)
 
-        uuid = self.t_create_model("Place")  # creating known model
-        self.t_cmd_output_test(f"show Place {uuid}", uuid)  # exists
-        self.t_cmd_output_test(f'Place.destroy("{uuid}")', "")
-        self.t_cmd_output_test(f"show Place {uuid}", "** no instance found **")
+        # create again
+        uuids = self.t_create_all_models()
+        # User.destroy("uuid")
+        for model, uuid in zip(self.models, uuids):
+            self.t_cmd_assert_false(f'{model}.destroy("{uuid}")')
+        self.t_test_uuids_absent(uuids)  # test that destroy succeeded
 
     def test_all_command(self):
         """Tests for the all command"""
