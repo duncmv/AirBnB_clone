@@ -58,7 +58,7 @@ class Helpers(unittest.TestCase):
             return [str(v) for k, v in objs.items() if model in k]
         return [str(v) for v in objs.values()]  # Fetch all
 
-    def t_trucate_store(self):
+    def t_truncate_store(self):
         """Remove the store file for recreation"""
         reg = r"\[(\w+)] \(([\w-]+)\)"
         with patch("sys.stdout", new=StringIO()) as f:
@@ -66,6 +66,7 @@ class Helpers(unittest.TestCase):
             matches = re.findall(reg, f.getvalue().strip())
             for model, uuid in matches:
                 HBNBCommand().onecmd("destroy {} {}".format(model, uuid))
+        FileStorage._FileStorage__objects = {}  # take care of the memory store
 
     def t_cmd_output_test(self, cmd: str, expected: str):
         """Test running a command and checking output against expected"""
@@ -301,18 +302,35 @@ class TestHBNBCommand(Helpers):
 
     def test_count_command(self):
         """Tests for the count command"""
+
+        # Truncate the store to start on a clean slate
+        self.t_truncate_store()
+
         self.t_cmd_output_test("count", "* class name missing **")
-        users = self.t_fetch_model("User")
-        n_users = len(users)
-        self.t_cmd_output_test("count User", "{}".format(n_users))
         self.t_cmd_output_test("count xyz", "** class doesn't exist **")
+        self.t_cmd_output_test("User.count", "*** Unknown syntax:")
+        self.t_cmd_output_test("User.count(aca9)", "class doesn't exist")
+        self.t_cmd_output_test('User.count("aca9")', "class doesn't exist")
 
-        uuids = [self.t_create_model("User") for _ in range(3)]
-        self.t_cmd_output_test("count User", "{}".format(n_users+3))
-        self.t_cmd_output_test("User.count()", "{}".format(n_users+3))
+        uuids = self.t_create_all_models()  # create all model forms
+        outputs = self.t_show_all_models(uuids)  # like the all command
+        self.t_test_output_in_outputs(uuids, outputs)  # uuids are present
 
-        for uuid in uuids:
-            self.t_destroy_model(f"User {uuid}")
+        # command type: User.all()
+        for model in self.models:
+            self.t_cmd_output_test(f'{model}.count()', "1")
+        # command type: all User
+        for model in self.models:
+            self.t_cmd_output_test(f'count {model}', "1")
+
+        self.t_truncate_store()
+
+        # command type: User.all()
+        for model in self.models:
+            self.t_cmd_output_test(f'{model}.count()', "0")
+        # command type: all User
+        for model in self.models:
+            self.t_cmd_output_test(f'count {model}', "0")
 
 
 if __name__ == "__main__":
