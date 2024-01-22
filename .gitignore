@@ -15,3 +15,9 @@ tests/__pycache__
 *.log
 log
 logs
+
+*.bak
+*.bak*.*
+*-bak
+*-bak*.*
+run_automation

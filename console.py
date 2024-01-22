@@ -14,6 +14,17 @@ from models.state import State
 from models.user import User
 
 
+def get_type(data: str):
+    """Determine the data type contained in the string"""
+    try:
+        return type(int(data))
+    except Exception:
+        try:
+            return type(float(data))
+        except Exception:
+            return str
+
+
 def extract_words(input_string):
     """Extracts command arguments from the interpreter correctly.
     This is to allow the use of multiple words in quites as argument."""
@@ -212,8 +223,10 @@ on class name:
                         v = type_(value)
                         setattr(objs[f"{args[0]}.{args[1]}"], key, v)
                 else:  # UPDATE id first_name michael
-                    type_ = type(getattr(obj, args[2], str))
+                    type_ = type(getattr(obj, args[2], ""))
                     v = type_(args[3])
+                    if type_ is str:
+                        v = get_type(args[3])(args[3])
                     setattr(objs[f"{args[0]}.{args[1]}"], args[2], v)
                 storage.save_changes(objs)
 
