@@ -36,12 +36,13 @@
     color: #ff5a5f;
     border: 4px #ff5a5f solid;
     border-radius: 50%;
-    min-width: 60px;
-    height: 60px;
+    min-width: 80px;
+    height: 80px;
     font-size: 30px;
     margin-right: 20px;
-    line-height: 50px;
+    line-height: 70px;
     margin-left: auto;
+    text-align: center;
 }
 
 .information {
